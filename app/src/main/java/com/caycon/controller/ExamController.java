@@ -16,6 +16,7 @@ public class ExamController {
     private JRadioButton option1, option2, option3;
     private ButtonGroup optionGroup;
     private JButton[] questionButtons;
+    private QuestionController questionController;
 
     public ExamController(List<Question> questions, int[] userAnswers, JLabel questionLabel,
             JRadioButton option1, JRadioButton option2, JRadioButton option3,
@@ -29,14 +30,13 @@ public class ExamController {
         this.option3 = option3;
         this.optionGroup = optionGroup;
         this.questionButtons = questionButtons;
+        this.questionController = new QuestionController();
     }
 
-    // lấy vị trí đang đứng
     public int getCurrentQuestionIndex() {
         return currentQuestionIndex;
     }
 
-    // Lưu đáp án được chọn
     public void saveAnswer() {
         if (!questions.isEmpty()) {
             List<Answer> answers = questions.get(currentQuestionIndex).getAnswers();
@@ -48,21 +48,20 @@ public class ExamController {
                 } else if (option3.isSelected()) {
                     userAnswers[currentQuestionIndex] = answers.get(2).getId();
                 } else {
-                    userAnswers[currentQuestionIndex] = 0; // Không chọn đáp án
+                    userAnswers[currentQuestionIndex] = 0;
                 }
             }
         }
     }
 
-    // Cập nhật câu hỏi và đáp án
     public void updateQuestion(int index) {
         if (index >= 0 && index < questions.size()) {
             currentQuestionIndex = index;
             Question question = questions.get(index);
             questionLabel.setText("Câu " + (index + 1) + ": " + question.getContent());
 
-            // Cập nhật đáp án
-            List<Answer> answers = question.getAnswers();
+            // Lấy danh sách đáp án đã xáo trộn
+            List<Answer> answers = questionController.getShuffledAnswers(question);
             if (answers.size() >= 3) {
                 option1.setText(answers.get(0).getContent());
                 option2.setText(answers.get(1).getContent());
@@ -96,7 +95,6 @@ public class ExamController {
         }
     }
 
-    // Đánh dấu nút câu hỏi được chọn
     public void updateQuestionButtonHighlight(int index) {
         if (questionButtons != null && index >= 0 && index < questionButtons.length) {
             for (int i = 0; i < questionButtons.length; i++) {
@@ -109,7 +107,6 @@ public class ExamController {
         }
     }
 
-    // Xử lý nộp bài
     public void submitExam(JFrame examFrame) {
         saveAnswer();
         double score = 0;
@@ -123,6 +120,6 @@ public class ExamController {
             }
         }
         examFrame.dispose();
-        new ResultFrame(score, questions.size() * 10).setVisible(true); // Tổng điểm tối đa là 100
+        new ResultFrame(score, questions.size() * 10).setVisible(true);
     }
 }

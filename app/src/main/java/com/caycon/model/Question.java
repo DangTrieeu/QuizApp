@@ -5,21 +5,16 @@ import java.util.List;
 public class Question {
     private int id; // ID câu hỏi
     private String content; // Nội dung câu hỏi
-    private String category; // Danh mục (nếu có, ví dụ: Toán, Lý, Hóa)
+    private String category; // Danh mục (Toán, Văn, Anh)
     private double point; // Điểm số của câu hỏi
+    private int examId; // ID bài thi liên kết
     private List<Answer> answers; // Danh sách các đáp án
 
-    // Constructor đầy đủ
-    public Question(int id, String content, String category, double point, List<Answer> answers) {
-        this.id = id;
-        this.content = content;
-        this.category = category;
-        this.point = point;
-        this.answers = answers;
+    public Question() {
     }
 
-    // Constructor không có ID (dùng khi tạo mới câu hỏi trước khi lưu vào DB)
-    public Question(String content, String category, double point, List<Answer> answers) {
+    public Question(int id, String content, String category, double point, List<Answer> answers) {
+        this.id = id;
         this.content = content;
         this.category = category;
         this.point = point;
@@ -59,21 +54,19 @@ public class Question {
         this.point = point;
     }
 
+    public int getExamId() {
+        return examId;
+    }
+
+    public void setExamId(int examId) {
+        this.examId = examId;
+    }
+
     public List<Answer> getAnswers() {
         return answers;
     }
 
     public void setAnswers(List<Answer> answers) {
         this.answers = answers;
-    }
-
-    @Override
-    public String toString() {
-        return "Question{" +
-                "id=" + id +
-                ", content='" + content + '\'' +
-                ", category='" + category + '\'' +
-                ", point=" + point +
-                '}';
     }
 }

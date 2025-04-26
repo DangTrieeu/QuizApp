@@ -11,7 +11,7 @@ public class User {
     public User(int id, String username, String password, String role) {
         this.id = id;
         this.username = username;
-        this.password = password; // Lưu ý: Mã hóa password trước khi lưu
+        this.password = password;
         this.role = role;
     }
 

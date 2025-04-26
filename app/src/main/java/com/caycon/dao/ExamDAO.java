@@ -12,12 +12,11 @@ public class ExamDAO {
     public List<Exam> getAllExams() throws SQLException {
         List<Exam> exams = new ArrayList<>();
         String examQuery = "SELECT id, name, category FROM EXAM";
-        String questionQuery = "SELECT q.id, q.content, q.category, q.point, " +
+        String questionQuery = "SELECT q.id, q.content, q.category, q.point, q.exam_id, " +
                 "a.id AS answer_id, a.content AS answer_content, a.is_correct " +
-                "FROM EXAM_QUESTION eq " +
-                "JOIN QUESTION q ON eq.question_id = q.id " +
+                "FROM QUESTION q " +
                 "LEFT JOIN ANSWER a ON q.id = a.question_id " +
-                "WHERE eq.exam_id = ? " +
+                "WHERE q.exam_id = ? " +
                 "ORDER BY q.id, a.id";
 
         try (Connection conn = DBConnection.getConnection();
@@ -43,6 +42,7 @@ public class ExamDAO {
                                     questionRs.getString("category"),
                                     questionRs.getDouble("point"),
                                     new ArrayList<>()));
+                            question.setExamId(questionRs.getInt("exam_id"));
 
                             int answerId = questionRs.getInt("answer_id");
                             if (!questionRs.wasNull()) {

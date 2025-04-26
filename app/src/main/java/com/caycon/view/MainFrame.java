@@ -1,15 +1,13 @@
 package com.caycon.view;
 
 import javax.swing.*;
-import java.util.*;
+import java.awt.*;
+import java.sql.SQLException;
 import java.util.List;
 
 import com.caycon.dao.ExamDAO;
 import com.caycon.model.Exam;
 import com.caycon.model.User;
-
-import java.awt.*;
-import java.sql.SQLException;
 
 public class MainFrame extends JFrame {
     private User user;
@@ -107,14 +105,14 @@ public class MainFrame extends JFrame {
             List<Exam> exams = examDAO.getAllExams();
 
             for (Exam exam : exams) {
-                JButton btnExam = new JButton(exam.getName() + " (" + exam.getCategory() + ")");
+                JButton btnExam = new JButton(exam.getName());
                 btnExam.setAlignmentX(Component.LEFT_ALIGNMENT);
                 btnExam.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
                 btnExam.addActionListener(e -> {
-                    // Chuyển sang ExamFrame với danh sách câu hỏi của bài thi
+                    // Chuyển sang ExamFrame với examId
                     dispose();
-                    new ExamFrame().setVisible(true);
+                    new ExamFrame(exam.getId()).setVisible(true);
                 });
 
                 examListPanel.add(btnExam);
@@ -130,8 +128,8 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    // public static void main(String[] args) {
-    // User user = new User(1, "testuser", "password", "candidate");
-    // SwingUtilities.invokeLater(() -> new MainFrame(user).setVisible(true));
-    // }
+    public static void main(String[] args) {
+        User user = new User(1, "user", "123456", "candidate");
+        SwingUtilities.invokeLater(() -> new MainFrame(user).setVisible(true));
+    }
 }

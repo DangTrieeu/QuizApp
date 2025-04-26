@@ -1,14 +1,13 @@
 package com.caycon.view;
 
 import javax.swing.*;
-
-import com.caycon.dao.QuestionDAO;
-import com.caycon.model.Answer;
-import com.caycon.model.Question;
-
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
+
+import com.caycon.dao.QuestionDAO;
+import com.caycon.model.Question;
+import com.caycon.controller.ExamController;
 
 public class ExamFrame extends JFrame {
     private JLabel questionLabel;
@@ -16,10 +15,10 @@ public class ExamFrame extends JFrame {
     private ButtonGroup optionGroup;
     private List<Question> questions;
     private JButton[] questionButtons;
-    private int currentQuestionIndex = 0;
-    private int[] userAnswers; // Lưu answer_id của đáp án được chọn
+    private int[] userAnswers;
+    private ExamController examController;
 
-    public ExamFrame() {
+    public ExamFrame(int examId) {
         // Thiết lập frame chính
         setTitle("Bài Thi");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -29,13 +28,16 @@ public class ExamFrame extends JFrame {
         // Tải câu hỏi từ cơ sở dữ liệu
         try {
             QuestionDAO questionDAO = new QuestionDAO();
-            questions = questionDAO.getAllQuestions();
+            questions = questionDAO.getQuestionsByExamId(examId);
         } catch (SQLException e) {
             e.printStackTrace();
             JOptionPane.showMessageDialog(this, "Lỗi khi tải câu hỏi: " + e.getMessage(),
                     "Lỗi", JOptionPane.ERROR_MESSAGE);
             questions = List.of();
         }
+        userAnswers = new int[questions.size()];
+        examController = new ExamController(questions, userAnswers, questionLabel, option1, option2, option3,
+                optionGroup, questionButtons);
 
         // Khởi tạo mảng lưu đáp án
         userAnswers = new int[questions.size()];
@@ -80,6 +82,10 @@ public class ExamFrame extends JFrame {
         questionListPanel.setBorder(BorderFactory.createTitledBorder("Danh sách câu hỏi"));
         questionButtons = new JButton[questions.size()];
 
+        // Khởi tạo ExamController
+        examController = new ExamController(questions, userAnswers, questionLabel, option1, option2, option3,
+                optionGroup, questionButtons);
+
         // Tạo nút cho mỗi câu hỏi
         for (int i = 0; i < questions.size(); i++) {
             questionButtons[i] = new JButton("Câu " + (i + 1));
@@ -87,8 +93,8 @@ public class ExamFrame extends JFrame {
             questionButtons[i].setActionCommand(String.valueOf(i));
             questionButtons[i].addActionListener(e -> {
                 int index = Integer.parseInt(e.getActionCommand());
-                saveAnswer();
-                updateQuestion(index);
+                examController.saveAnswer();
+                examController.updateQuestion(index);
             });
             questionListPanel.add(questionButtons[i]);
         }
@@ -104,30 +110,30 @@ public class ExamFrame extends JFrame {
         JButton previousButton = new JButton("<-");
         JButton nextButton = new JButton("->");
         JButton lastButton = new JButton("Last");
-        JButton submitButton = new JButton("Submit"); // Nút Submit
+        JButton submitButton = new JButton("Submit");
 
         // Xử lý sự kiện cho các nút điều hướng
         firstButton.addActionListener(e -> {
-            saveAnswer();
-            updateQuestion(0);
+            examController.saveAnswer();
+            examController.updateQuestion(0);
         });
         previousButton.addActionListener(e -> {
-            if (currentQuestionIndex > 0) {
-                saveAnswer();
-                updateQuestion(currentQuestionIndex - 1);
+            if (examController.getCurrentQuestionIndex() > 0) {
+                examController.saveAnswer();
+                examController.updateQuestion(examController.getCurrentQuestionIndex() - 1);
             }
         });
         nextButton.addActionListener(e -> {
-            if (currentQuestionIndex < questions.size() - 1) {
-                saveAnswer();
-                updateQuestion(currentQuestionIndex + 1);
+            if (examController.getCurrentQuestionIndex() < questions.size() - 1) {
+                examController.saveAnswer();
+                examController.updateQuestion(examController.getCurrentQuestionIndex() + 1);
             }
         });
         lastButton.addActionListener(e -> {
-            saveAnswer();
-            updateQuestion(questions.size() - 1);
+            examController.saveAnswer();
+            examController.updateQuestion(questions.size() - 1);
         });
-        submitButton.addActionListener(e -> submitExam()); // Xử lý Submit
+        submitButton.addActionListener(e -> examController.submitExam(this));
 
         buttonPanel.add(firstButton);
         buttonPanel.add(previousButton);
@@ -147,105 +153,15 @@ public class ExamFrame extends JFrame {
         // Thêm panel chính vào frame
         add(mainPanel);
 
-        // Tải câu hỏi đầu tiên sau khi khởi tạo questionButtons
+        // Tải câu hỏi đầu tiên
         if (!questions.isEmpty()) {
-            updateQuestion(0);
+            examController.updateQuestion(0);
         }
-    }
-
-    // Lưu đáp án được chọn
-    private void saveAnswer() {
-        if (!questions.isEmpty()) {
-            List<Answer> answers = questions.get(currentQuestionIndex).getAnswers();
-            if (answers.size() >= 3) {
-                if (option1.isSelected()) {
-                    userAnswers[currentQuestionIndex] = answers.get(0).getId();
-                } else if (option2.isSelected()) {
-                    userAnswers[currentQuestionIndex] = answers.get(1).getId();
-                } else if (option3.isSelected()) {
-                    userAnswers[currentQuestionIndex] = answers.get(2).getId();
-                } else {
-                    userAnswers[currentQuestionIndex] = 0; // Không chọn đáp án
-                }
-            }
-        }
-    }
-
-    // Cập nhật câu hỏi và đáp án
-    private void updateQuestion(int index) {
-        if (index >= 0 && index < questions.size()) {
-            currentQuestionIndex = index;
-            Question question = questions.get(index);
-            questionLabel.setText("Câu " + (index + 1) + ": " + question.getContent());
-
-            // Cập nhật đáp án
-            List<Answer> answers = question.getAnswers();
-            if (answers.size() >= 3) {
-                option1.setText(answers.get(0).getContent());
-                option2.setText(answers.get(1).getContent());
-                option3.setText(answers.get(2).getContent());
-
-                // Khôi phục lựa chọn trước đó
-                optionGroup.clearSelection();
-                int selectedAnswerId = userAnswers[currentQuestionIndex];
-                for (int i = 0; i < 3; i++) {
-                    if (answers.get(i).getId() == selectedAnswerId) {
-                        switch (i) {
-                            case 0:
-                                option1.setSelected(true);
-                                break;
-                            case 1:
-                                option2.setSelected(true);
-                                break;
-                            case 2:
-                                option3.setSelected(true);
-                                break;
-                        }
-                    }
-                }
-            } else {
-                option1.setText("Không có đáp án");
-                option2.setText("Không có đáp án");
-                option3.setText("Không có đáp án");
-            }
-
-            updateQuestionButtonHighlight(index);
-        }
-    }
-
-    // Đánh dấu nút câu hỏi được chọn
-    private void updateQuestionButtonHighlight(int index) {
-        if (questionButtons != null && index >= 0 && index < questionButtons.length) {
-            for (int i = 0; i < questionButtons.length; i++) {
-                if (i == index) {
-                    questionButtons[i].setBackground(Color.LIGHT_GRAY);
-                } else {
-                    questionButtons[i].setBackground(null);
-                }
-            }
-        }
-    }
-
-    // Xử lý nộp bài
-    private void submitExam() {
-        saveAnswer();
-        double score = 0;
-        for (int i = 0; i < questions.size(); i++) {
-            int selectedAnswerId = userAnswers[i];
-            for (Answer a : questions.get(i).getAnswers()) {
-                if (a.getId() == selectedAnswerId && a.isCorrect()) {
-                    score += questions.get(i).getPoint();
-                    break;
-                }
-            }
-        }
-        dispose();
-        new ResultFrame(score, questions.size() * 10).setVisible(true); // Tổng điểm tối đa là 100
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            ExamFrame demo = new ExamFrame();
+            ExamFrame demo = new ExamFrame(1);
             demo.setVisible(true);
         });
     }

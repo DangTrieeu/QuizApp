@@ -7,9 +7,11 @@ import java.util.List;
 
 import com.caycon.dao.QuestionDAO;
 import com.caycon.model.Question;
+import com.caycon.model.User;
 import com.caycon.controller.ExamController;
 
 public class ExamFrame extends JFrame {
+    private User user;
     private JLabel questionLabel;
     private JRadioButton option1, option2, option3;
     private ButtonGroup optionGroup;
@@ -18,12 +20,15 @@ public class ExamFrame extends JFrame {
     private int[] userAnswers;
     private ExamController examController;
 
-    public ExamFrame(int examId) {
+    public ExamFrame(int examId, User user) {
+        this.user = user;
         // Thiết lập frame chính
         setTitle("Bài Thi");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 500);
         setLocationRelativeTo(null);
+        JLabel lblUser = new JLabel("Người dùng: " + user.getUsername());
+        add(lblUser, BorderLayout.NORTH);
 
         // Tải câu hỏi từ cơ sở dữ liệu
         try {
@@ -37,7 +42,7 @@ public class ExamFrame extends JFrame {
         }
         userAnswers = new int[questions.size()];
         examController = new ExamController(questions, userAnswers, questionLabel, option1, option2, option3,
-                optionGroup, questionButtons);
+                optionGroup, questionButtons, user);
 
         // Khởi tạo mảng lưu đáp án
         userAnswers = new int[questions.size()];
@@ -84,7 +89,7 @@ public class ExamFrame extends JFrame {
 
         // Khởi tạo ExamController
         examController = new ExamController(questions, userAnswers, questionLabel, option1, option2, option3,
-                optionGroup, questionButtons);
+                optionGroup, questionButtons, user);
 
         // Tạo nút cho mỗi câu hỏi
         for (int i = 0; i < questions.size(); i++) {
@@ -160,8 +165,9 @@ public class ExamFrame extends JFrame {
     }
 
     public static void main(String[] args) {
+        User user = new User(2, "admin", "123456", "admin");
         SwingUtilities.invokeLater(() -> {
-            ExamFrame demo = new ExamFrame(1);
+            ExamFrame demo = new ExamFrame(1, user);
             demo.setVisible(true);
         });
     }

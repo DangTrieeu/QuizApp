@@ -1,13 +1,15 @@
 package com.caycon.view;
 
 import javax.swing.*;
+import java.awt.*;
 
 import com.caycon.model.User;
 
-import java.awt.*;
-
 public class ResultFrame extends JFrame {
-    public ResultFrame(double score, double maxScore) {
+    private User user;
+
+    public ResultFrame(double score, double maxScore, User user) {
+        this.user = user;
         setTitle("Kết Quả Bài Thi");
         setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -36,15 +38,16 @@ public class ResultFrame extends JFrame {
 
         btnBack.addActionListener(e -> {
             dispose();
-            new MainFrame(new User(1, "user", "123456", "candidate")).setVisible(true);
+            new MainFrame(user).setVisible(true);
         });
 
         add(panel);
     }
 
     public static void main(String[] args) {
+        User user = new User(1, "user", "123456", "candidate");
         SwingUtilities.invokeLater(() -> {
-            ResultFrame frame = new ResultFrame(80, 100);
+            ResultFrame frame = new ResultFrame(80, 100, user);
             frame.setVisible(true);
         });
     }

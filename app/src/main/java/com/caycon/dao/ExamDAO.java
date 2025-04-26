@@ -64,4 +64,23 @@ public class ExamDAO {
 
         return exams;
     }
+
+    public void addExam(String name, String category) throws SQLException {
+        String query = "INSERT INTO EXAM (name, category) VALUES (?, ?)";
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, name);
+            stmt.setString(2, category);
+            stmt.executeUpdate();
+        }
+    }
+
+    public void deleteExam(int examId) throws SQLException {
+        String query = "DELETE FROM EXAM WHERE id = ?";
+        try (Connection conn = DBConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, examId);
+            stmt.executeUpdate();
+        }
+    }
 }

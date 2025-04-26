@@ -30,7 +30,7 @@ public class MainFrame extends JFrame {
         taskbar.setBackground(new Color(220, 220, 220));
 
         JButton btnProfile = new JButton("Thông Tin Cá Nhân");
-        JButton btnExam = new JButton("Làm Bài Trắc Nghiệm");
+        JButton btnExam = new JButton("Danh sách bài thi");
         JButton btnLogout = new JButton("Đăng Xuất");
 
         btnProfile.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -100,19 +100,66 @@ public class MainFrame extends JFrame {
         examListPanel.setLayout(new BoxLayout(examListPanel, BoxLayout.Y_AXIS));
         JScrollPane scrollPane = new JScrollPane(examListPanel);
 
+        // Nút thêm và xóa bài thi (chỉ dành cho admin)
+        JPanel adminPanel = new JPanel();
+        if ("admin".equals(user.getRole())) {
+            JButton btnAddExam = new JButton("Thêm Bài Thi");
+            JButton btnDeleteExam = new JButton("Xóa Bài Thi");
+
+            btnAddExam.addActionListener(e -> {
+                new AddExamFrame(user).setVisible(true);
+            });
+
+            btnDeleteExam.addActionListener(e -> {
+                try {
+                    ExamDAO examDAO = new ExamDAO();
+                    List<Exam> exams = examDAO.getAllExams();
+                    String[] examNames = exams.stream()
+                            .map(exam -> exam.getName() + " (" + exam.getCategory() + ")")
+                            .toArray(String[]::new);
+                    String selectedExam = (String) JOptionPane.showInputDialog(
+                            this,
+                            "Chọn bài thi để xóa:",
+                            "Xóa Bài Thi",
+                            JOptionPane.PLAIN_MESSAGE,
+                            null,
+                            examNames,
+                            examNames.length > 0 ? examNames[0] : null);
+                    if (selectedExam != null) {
+                        int examId = exams.stream()
+                                .filter(exam -> (exam.getName() + " (" + exam.getCategory() + ")").equals(selectedExam))
+                                .findFirst()
+                                .map(Exam::getId)
+                                .orElse(-1);
+                        if (examId != -1) {
+                            examDAO.deleteExam(examId);
+                            JOptionPane.showMessageDialog(this, "Xóa bài thi thành công!");
+                            cardLayout.show(contentPanel, "exam"); // Tải lại danh sách
+                        }
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Lỗi khi xóa bài thi: " + ex.getMessage());
+                }
+            });
+
+            adminPanel.add(btnAddExam);
+            adminPanel.add(btnDeleteExam);
+        }
+
         try {
             ExamDAO examDAO = new ExamDAO();
             List<Exam> exams = examDAO.getAllExams();
 
             for (Exam exam : exams) {
-                JButton btnExam = new JButton(exam.getName());
+                JButton btnExam = new JButton(
+                        exam.getName() + " (" + exam.getCategory() + ", " + exam.getQuestions().size() + " câu)");
                 btnExam.setAlignmentX(Component.LEFT_ALIGNMENT);
                 btnExam.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
                 btnExam.addActionListener(e -> {
-                    // Chuyển sang ExamFrame với examId
                     dispose();
-                    new ExamFrame(exam.getId()).setVisible(true);
+                    new ExamFrame(exam.getId(), user).setVisible(true);
                 });
 
                 examListPanel.add(btnExam);
@@ -124,12 +171,13 @@ public class MainFrame extends JFrame {
             examListPanel.add(lblError);
         }
 
+        panel.add(adminPanel, BorderLayout.SOUTH);
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
 
     public static void main(String[] args) {
-        User user = new User(1, "user", "123456", "candidate");
+        User user = new User(2, "admin", "123456", "admin");
         SwingUtilities.invokeLater(() -> new MainFrame(user).setVisible(true));
     }
 }

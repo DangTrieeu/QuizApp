@@ -2,6 +2,7 @@ package com.caycon.controller;
 
 import com.caycon.model.Answer;
 import com.caycon.model.Question;
+import com.caycon.model.User;
 import com.caycon.view.ResultFrame;
 
 import javax.swing.*;
@@ -9,6 +10,7 @@ import java.awt.*;
 import java.util.List;
 
 public class ExamController {
+
     private List<Question> questions;
     private int[] userAnswers;
     private int currentQuestionIndex;
@@ -17,10 +19,11 @@ public class ExamController {
     private ButtonGroup optionGroup;
     private JButton[] questionButtons;
     private QuestionController questionController;
+    private User user;
 
     public ExamController(List<Question> questions, int[] userAnswers, JLabel questionLabel,
             JRadioButton option1, JRadioButton option2, JRadioButton option3,
-            ButtonGroup optionGroup, JButton[] questionButtons) {
+            ButtonGroup optionGroup, JButton[] questionButtons, User user) {
         this.questions = questions;
         this.userAnswers = userAnswers;
         this.currentQuestionIndex = 0;
@@ -31,6 +34,7 @@ public class ExamController {
         this.optionGroup = optionGroup;
         this.questionButtons = questionButtons;
         this.questionController = new QuestionController();
+        this.user = user;
     }
 
     public int getCurrentQuestionIndex() {
@@ -120,6 +124,6 @@ public class ExamController {
             }
         }
         examFrame.dispose();
-        new ResultFrame(score, questions.size() * 10).setVisible(true);
+        new ResultFrame(score, questions.size() * 10, user).setVisible(true);
     }
 }

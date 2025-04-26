@@ -64,10 +64,14 @@ public class MainFrame extends JFrame {
         add(contentPanel, BorderLayout.CENTER);
 
         btnProfile.addActionListener(e -> cardLayout.show(contentPanel, "profile"));
-        btnExam.addActionListener(e -> cardLayout.show(contentPanel, "exam"));
+        btnExam.addActionListener(e -> {
+            JPanel newExamPanel = createExamPanel(); // Làm mới danh sách bài thi
+            contentPanel.add(newExamPanel, "exam");
+            cardLayout.show(contentPanel, "exam");
+        });
         btnLogout.addActionListener(e -> {
-            dispose();
-            new LoginFrame().setVisible(true);
+            setVisible(false); // Ẩn MainFrame
+            new LoginFrame().setVisible(true); // Mở LoginFrame, truyền MainFrame
         });
     }
 
@@ -134,7 +138,10 @@ public class MainFrame extends JFrame {
                         if (examId != -1) {
                             examDAO.deleteExam(examId);
                             JOptionPane.showMessageDialog(this, "Xóa bài thi thành công!");
-                            cardLayout.show(contentPanel, "exam"); // Tải lại danh sách
+                            // Làm mới panel danh sách bài thi
+                            JPanel newExamPanel = createExamPanel();
+                            contentPanel.add(newExamPanel, "exam");
+                            cardLayout.show(contentPanel, "exam");
                         }
                     }
                 } catch (SQLException ex) {

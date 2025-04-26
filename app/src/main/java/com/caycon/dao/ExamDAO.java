@@ -7,6 +7,7 @@ import com.caycon.model.Answer;
 import com.caycon.model.Exam;
 import com.caycon.model.Question;
 import com.caycon.util.DBConnection;
+import com.caycon.util.ExcelReader;
 
 public class ExamDAO {
     public List<Exam> getAllExams() throws SQLException {
@@ -72,6 +73,76 @@ public class ExamDAO {
             stmt.setString(1, name);
             stmt.setString(2, category);
             stmt.executeUpdate();
+        }
+    }
+
+    public void addExamWithQuestions(String name, String category, String excelFilePath) throws Exception {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false); // Bắt đầu transaction
+
+            // Thêm bài thi
+            String examQuery = "INSERT INTO EXAM (name, category) VALUES (?, ?)";
+            int examId;
+            try (PreparedStatement examStmt = conn.prepareStatement(examQuery, Statement.RETURN_GENERATED_KEYS)) {
+                examStmt.setString(1, name);
+                examStmt.setString(2, category);
+                examStmt.executeUpdate();
+                try (ResultSet rs = examStmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        examId = rs.getInt(1);
+                    } else {
+                        throw new SQLException("Không lấy được examId.");
+                    }
+                }
+            }
+
+            // Đọc câu hỏi từ Excel
+            ExcelReader excelReader = new ExcelReader();
+            List<Question> questions = excelReader.readQuestions(excelFilePath);
+            if (questions.isEmpty()) {
+                conn.rollback();
+                throw new Exception("File Excel không chứa câu hỏi hợp lệ.");
+            }
+
+            // Thêm câu hỏi và đáp án
+            String questionQuery = "INSERT INTO QUESTION (content, category, point, exam_id) VALUES (?, ?, ?, ?)";
+            String answerQuery = "INSERT INTO ANSWER (question_id, content, is_correct) VALUES (?, ?, ?)";
+            for (Question question : questions) {
+                // Thêm câu hỏi
+                int questionId;
+                try (PreparedStatement questionStmt = conn.prepareStatement(questionQuery,
+                        Statement.RETURN_GENERATED_KEYS)) {
+                    questionStmt.setString(1, question.getContent());
+                    questionStmt.setString(2, category); // Dùng category từ bài thi
+                    questionStmt.setDouble(3, question.getPoint());
+                    questionStmt.setInt(4, examId);
+                    questionStmt.executeUpdate();
+                    try (ResultSet rs = questionStmt.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            questionId = rs.getInt(1);
+                        } else {
+                            throw new SQLException("Không lấy được questionId.");
+                        }
+                    }
+                }
+
+                // Thêm đáp án
+                try (PreparedStatement answerStmt = conn.prepareStatement(answerQuery)) {
+                    for (Answer answer : question.getAnswers()) {
+                        answerStmt.setInt(1, questionId);
+                        answerStmt.setString(2, answer.getContent());
+                        answerStmt.setBoolean(3, answer.isCorrect());
+                        answerStmt.executeUpdate();
+                    }
+                }
+            }
+
+            conn.commit(); // Commit transaction
+        } catch (Exception e) {
+            try (Connection conn = DBConnection.getConnection()) {
+                conn.rollback(); // Rollback nếu có lỗi
+            }
+            throw e;
         }
     }
 

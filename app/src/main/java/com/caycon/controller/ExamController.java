@@ -7,10 +7,11 @@ import com.caycon.view.ResultFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ExamController {
-
     private List<Question> questions;
     private int[] userAnswers;
     private int currentQuestionIndex;
@@ -20,6 +21,8 @@ public class ExamController {
     private JButton[] questionButtons;
     private QuestionController questionController;
     private User user;
+    // Thêm bản đồ để ánh xạ JRadioButton với Answer ID
+    private Map<JRadioButton, Integer> answerIdMap;
 
     public ExamController(List<Question> questions, int[] userAnswers, JLabel questionLabel,
             JRadioButton option1, JRadioButton option2, JRadioButton option3,
@@ -35,6 +38,8 @@ public class ExamController {
         this.questionButtons = questionButtons;
         this.questionController = new QuestionController();
         this.user = user;
+        // Khởi tạo bản đồ
+        this.answerIdMap = new HashMap<>();
     }
 
     public int getCurrentQuestionIndex() {
@@ -43,16 +48,18 @@ public class ExamController {
 
     public void saveAnswer() {
         if (!questions.isEmpty()) {
-            List<Answer> answers = questions.get(currentQuestionIndex).getAnswers();
+            // Lấy danh sách đáp án đã xáo trộn
+            List<Answer> answers = questionController.getShuffledAnswers(questions.get(currentQuestionIndex));
             if (answers.size() >= 3) {
-                if (option1.isSelected()) {
-                    userAnswers[currentQuestionIndex] = answers.get(0).getId();
-                } else if (option2.isSelected()) {
-                    userAnswers[currentQuestionIndex] = answers.get(1).getId();
-                } else if (option3.isSelected()) {
-                    userAnswers[currentQuestionIndex] = answers.get(2).getId();
+                // Tìm JRadioButton được chọn và lấy ID tương ứng từ answerIdMap
+                if (option1.isSelected() && answerIdMap.containsKey(option1)) {
+                    userAnswers[currentQuestionIndex] = answerIdMap.get(option1);
+                } else if (option2.isSelected() && answerIdMap.containsKey(option2)) {
+                    userAnswers[currentQuestionIndex] = answerIdMap.get(option2);
+                } else if (option3.isSelected() && answerIdMap.containsKey(option3)) {
+                    userAnswers[currentQuestionIndex] = answerIdMap.get(option3);
                 } else {
-                    userAnswers[currentQuestionIndex] = 0;
+                    userAnswers[currentQuestionIndex] = 0; // Không có đáp án nào được chọn
                 }
             }
         }
@@ -64,35 +71,34 @@ public class ExamController {
             Question question = questions.get(index);
             questionLabel.setText("Câu " + (index + 1) + ": " + question.getContent());
 
+            // Xóa ánh xạ cũ
+            answerIdMap.clear();
+
             // Lấy danh sách đáp án đã xáo trộn
             List<Answer> answers = questionController.getShuffledAnswers(question);
             if (answers.size() >= 3) {
+                // Cập nhật nội dung và ánh xạ ID cho các tùy chọn
                 option1.setText(answers.get(0).getContent());
+                answerIdMap.put(option1, answers.get(0).getId());
                 option2.setText(answers.get(1).getContent());
+                answerIdMap.put(option2, answers.get(1).getId());
                 option3.setText(answers.get(2).getContent());
+                answerIdMap.put(option3, answers.get(2).getId());
 
                 // Khôi phục lựa chọn trước đó
                 optionGroup.clearSelection();
                 int selectedAnswerId = userAnswers[currentQuestionIndex];
-                for (int i = 0; i < 3; i++) {
-                    if (answers.get(i).getId() == selectedAnswerId) {
-                        switch (i) {
-                            case 0:
-                                option1.setSelected(true);
-                                break;
-                            case 1:
-                                option2.setSelected(true);
-                                break;
-                            case 2:
-                                option3.setSelected(true);
-                                break;
-                        }
+                for (Map.Entry<JRadioButton, Integer> entry : answerIdMap.entrySet()) {
+                    if (entry.getValue() == selectedAnswerId) {
+                        entry.getKey().setSelected(true);
+                        break;
                     }
                 }
             } else {
                 option1.setText("Không có đáp án");
                 option2.setText("Không có đáp án");
                 option3.setText("Không có đáp án");
+                answerIdMap.clear();
             }
 
             updateQuestionButtonHighlight(index);
@@ -116,6 +122,7 @@ public class ExamController {
         double score = 0;
         for (int i = 0; i < questions.size(); i++) {
             int selectedAnswerId = userAnswers[i];
+            // Sử dụng danh sách đáp án gốc để kiểm tra
             for (Answer a : questions.get(i).getAnswers()) {
                 if (a.getId() == selectedAnswerId && a.isCorrect()) {
                     score += questions.get(i).getPoint();
